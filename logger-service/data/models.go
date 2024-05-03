@@ -48,7 +48,7 @@ func (l *LogEntry) Insert(entry LogEntry) error {
 	return nil
 }
 
-func (l *LogEntry) All(entry LogEntry) ([]*LogEntry, error) {
+func (l *LogEntry) All() ([]*LogEntry, error) {
 	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
 	defer cancel()
 

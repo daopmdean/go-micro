@@ -2,7 +2,10 @@ package main
 
 import (
 	"context"
+	"fmt"
 	"log"
+	"log-service/data"
+	"net/http"
 	"time"
 
 	"go.mongodb.org/mongo-driver/mongo"
@@ -16,9 +19,8 @@ const (
 	grpcPort = "50001"
 )
 
-var client *mongo.Client
-
 type Config struct {
+	Models data.Models
 }
 
 func main() {
@@ -27,16 +29,36 @@ func main() {
 		log.Panic(err)
 	}
 
-	client = mongoClient
-
 	ctx, cancel := context.WithTimeout(context.Background(), 15*time.Second)
 	defer cancel()
 
 	defer func() {
-		if err := client.Disconnect(ctx); err != nil {
+		if err := mongoClient.Disconnect(ctx); err != nil {
 			panic(err)
 		}
 	}()
+
+	app := Config{
+		Models: data.New(mongoClient),
+	}
+
+	if err := app.serve(); err != nil {
+		log.Println(err)
+	}
+}
+
+func (app *Config) serve() error {
+	srv := &http.Server{
+		Addr:    fmt.Sprintf(":%s", port),
+		Handler: app.routes(),
+	}
+
+	log.Printf("Logger service started on %s\n", port)
+	if err := srv.ListenAndServe(); err != nil {
+		return err
+	}
+
+	return nil
 }
 
 func connectMongo() (*mongo.Client, error) {
