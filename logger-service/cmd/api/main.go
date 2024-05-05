@@ -12,6 +12,8 @@ import (
 	"go.mongodb.org/mongo-driver/mongo/options"
 )
 
+// mongodb://admin:password@localhost:27018/logs?authSource=admin&readPreference=primary
+
 const (
 	port     = "80"
 	rpcPort  = "5001"
@@ -72,6 +74,13 @@ func connectMongo() (*mongo.Client, error) {
 	if err != nil {
 		return nil, err
 	}
+
+	err = c.Ping(context.TODO(), nil)
+	if err != nil {
+		return nil, err
+	}
+
+	log.Println("---mongo connected")
 
 	return c, nil
 }
