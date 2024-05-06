@@ -4,14 +4,27 @@ import (
 	"fmt"
 	"log"
 	"net/http"
+	"time"
+
+	amqp "github.com/rabbitmq/amqp091-go"
 )
 
 const port = "80"
 
-type Config struct{}
+type Config struct {
+	Rabbit *amqp.Connection
+}
 
 func main() {
-	app := Config{}
+	rc, err := connectRabbit()
+	if err != nil {
+		log.Panicln(err)
+	}
+	defer rc.Close()
+
+	app := Config{
+		Rabbit: rc,
+	}
 
 	srv := http.Server{
 		Addr:    fmt.Sprintf(":%s", port),
@@ -19,8 +32,34 @@ func main() {
 	}
 
 	log.Printf("Broker service started on %s\n", port)
-	err := srv.ListenAndServe()
+	err = srv.ListenAndServe()
 	if err != nil {
 		log.Println(err)
+	}
+}
+
+func connectRabbit() (*amqp.Connection, error) {
+	var (
+		counts  = 0
+		backOff = 2 * time.Second
+		err     error
+	)
+
+	for {
+		if counts > 5 {
+			return nil, err
+		}
+
+		c, err := amqp.Dial("amqp://guest:guest@rabbitmq")
+		if err != nil {
+			log.Printf("Error: %s, backing off...", err.Error())
+			time.Sleep(backOff)
+
+			counts++
+			backOff += time.Second
+			continue
+		}
+
+		return c, nil
 	}
 }
