@@ -1,6 +1,7 @@
 package main
 
 import (
+	"listener/event"
 	"log"
 	"time"
 
@@ -14,6 +15,18 @@ func main() {
 	}
 
 	defer c.Close()
+
+	log.Println("listening & consuming RabbitMQ messages")
+
+	consumer, err := event.NewConsumer(c)
+	if err != nil {
+		log.Panic(err)
+	}
+
+	err = consumer.Listen([]string{"log.INFO", "log.WARNING", "log.ERROR"})
+	if err != nil {
+		log.Panic(err)
+	}
 }
 
 func connect() (*amqp.Connection, error) {
@@ -28,7 +41,7 @@ func connect() (*amqp.Connection, error) {
 			return nil, err
 		}
 
-		c, err := amqp.Dial("amqp://guest:guest@localhost")
+		c, err := amqp.Dial("amqp://guest:guest@rabbitmq")
 		if err != nil {
 			log.Printf("Error: %s, backing off...", err.Error())
 			time.Sleep(backOff)
