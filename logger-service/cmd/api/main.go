@@ -6,6 +6,7 @@ import (
 	"log"
 	"log-service/data"
 	"net/http"
+	"net/rpc"
 	"time"
 
 	"go.mongodb.org/mongo-driver/mongo"
@@ -21,6 +22,8 @@ const (
 	grpcPort = "50001"
 )
 
+var client *mongo.Client
+
 type Config struct {
 	Models data.Models
 }
@@ -30,6 +33,8 @@ func main() {
 	if err != nil {
 		log.Panic(err)
 	}
+
+	client = mongoClient
 
 	ctx, cancel := context.WithTimeout(context.Background(), 15*time.Second)
 	defer cancel()
@@ -43,6 +48,11 @@ func main() {
 	app := Config{
 		Models: data.New(mongoClient),
 	}
+
+	rpc.Register(new(RPCServer))
+	go app.rpcListen()
+
+	go app.gRPCListen()
 
 	if err := app.serve(); err != nil {
 		log.Println(err)

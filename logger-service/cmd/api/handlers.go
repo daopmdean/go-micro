@@ -44,7 +44,7 @@ func (app *Config) GetLogs(w http.ResponseWriter, r *http.Request) {
 
 	app.writeJSON(w, http.StatusOK, jsonRes{
 		Error:   false,
-		Message: "get logs successful",
+		Message: "get all logs successful",
 		Data:    logs,
 	})
 }

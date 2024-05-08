@@ -54,6 +54,8 @@ func (app *Config) HandleReq(w http.ResponseWriter, r *http.Request) {
 	case "auth":
 		app.authenticate(w, requestPayload.Auth)
 	case "log":
+		app.logEventViaRPC(w, requestPayload.Log)
+	case "log_rabbit":
 		app.logEventViaRabbit(w, requestPayload.Log)
 	case "log_http":
 		app.logViaHttpRequest(w, requestPayload.Log)
@@ -108,51 +110,6 @@ func (app *Config) authenticate(w http.ResponseWriter, p AuthPayload) {
 		Data:    jsonFromService.Data,
 	}
 	app.writeJSON(w, http.StatusOK, payload)
-}
-
-func (app *Config) logViaHttpRequest(w http.ResponseWriter, l LogPayload) {
-	jsonData, _ := json.Marshal(l)
-
-	logServiceUrl := "http://logger-service/log"
-
-	request, err := http.NewRequest("POST", logServiceUrl, bytes.NewBuffer(jsonData))
-	if err != nil {
-		app.errorJSON(w, err)
-		return
-	}
-
-	request.Header.Set("Content-Type", "application/json")
-
-	client := &http.Client{}
-	response, err := client.Do(request)
-	if err != nil {
-		app.errorJSON(w, err)
-		return
-	}
-	defer response.Body.Close()
-
-	if response.StatusCode != http.StatusOK {
-		app.errorJSON(w, errors.New("error calling log service"))
-		return
-	}
-
-	app.writeJSON(w, http.StatusOK, jsonRes{
-		Error:   false,
-		Message: "logged",
-	})
-}
-
-func (app *Config) logEventViaRabbit(w http.ResponseWriter, l LogPayload) {
-	err := app.pushToQueue(l.Name, l.Data)
-	if err != nil {
-		app.errorJSON(w, err)
-		return
-	}
-
-	app.writeJSON(w, http.StatusOK, jsonRes{
-		Error:   false,
-		Message: "logged via RabbitMQ",
-	})
 }
 
 func (app *Config) pushToQueue(name, msg string) error {
