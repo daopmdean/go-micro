@@ -50,8 +50,9 @@ func connectRabbit() (*amqp.Connection, error) {
 			return nil, err
 		}
 
-		c, err := amqp.Dial("amqp://guest:guest@rabbitmq")
-		if err != nil {
+		c, er := amqp.Dial("amqp://guest:guest@rabbitmq")
+		if er != nil {
+			err = er
 			log.Printf("Error: %s, backing off...", err.Error())
 			time.Sleep(backOff)
 
@@ -60,6 +61,7 @@ func connectRabbit() (*amqp.Connection, error) {
 			continue
 		}
 
+		log.Println("connected to Rabbit")
 		return c, nil
 	}
 }
