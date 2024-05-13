@@ -19,8 +19,7 @@ const port = "80"
 var counts = 0
 
 type Config struct {
-	DB     *sql.DB
-	Models data.Models
+	Repo data.Repository
 }
 
 func main() {
@@ -30,8 +29,7 @@ func main() {
 	}
 
 	app := Config{
-		DB:     conn,
-		Models: data.New(conn),
+		Repo: data.NewPostgresRepo(conn),
 	}
 
 	srv := &http.Server{
